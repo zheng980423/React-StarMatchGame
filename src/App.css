@@ -20,6 +20,7 @@
   text-align: center;
   padding: 10px;
   border: thin solid lightgray;
+  border-left: none;
 }
 .star {
   display: inline-block;
