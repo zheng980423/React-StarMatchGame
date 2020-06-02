@@ -1,8 +1,23 @@
 import React from "react";
+
 import _ from "lodash";
 require("./App.css");
 console.log(_.range(1, 10));
+//提取number元素
+class Number extends React.PureComponent {
+  //这是一个空的点击事件
 
+  clickHandler = () => console.log("Click on " + this.props.number);
+
+  render() {
+    return (
+      <button className="number" onClick={this.clickHandler}>
+        {/* 访问传入的props */}
+        {this.props.number}
+      </button>
+    );
+  }
+}
 class Game extends React.Component {
   //生成随机的星星数
   state = {
@@ -21,10 +36,9 @@ class Game extends React.Component {
 
           {/* 使用lodash的内置方法生成一个1-9的数组 */}
           <div className="play-numbers">
+            {/* 设置一个props */}
             {_.range(1, 10).map((number) => (
-              <button key={number} className="number">
-                {number}
-              </button>
+              <Number key={number} number={number} />
             ))}
           </div>
         </div>
