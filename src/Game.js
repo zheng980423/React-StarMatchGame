@@ -27,8 +27,13 @@ class Number extends React.PureComponent {
     return {};
   }
 
-  //这是一个空的点击事件
-  clickHandler = () => console.log("Click on " + this.props.number);
+  //点击事件
+  clickHandler = () => {
+    //数字没有没点击过才会触发
+    if (!this.props.isUsed) {
+      this.props.onClick(this.props.number);
+    }
+  };
 
   render() {
     return (
@@ -48,13 +53,32 @@ class Game extends React.Component {
   state = {
     stars: 1 + Math.floor(9 * Math.random()), //Math.random 本身只生成0-1的小数
     //已经原则过的数字
-    selectedNumbers: [2, 4],
+    selectedNumbers: [],
     //已经使用过的数字
-    usedNumbers: [7, 8],
+    usedNumbers: [],
   };
 
   //当已挑选的数字大于星星数量，返回wrong否则返回true
   selectionIsWrong = _.sum(this.state.selectedNumbers) > this.state.stars;
+  onNumberClick = (number) => {
+    this.setState((prevState) => {
+      let { selectedNumbers, usedNumbers, stars } = prevState;
+      selectedNumbers = [...selectedNumbers, number];
+
+      const selectedSum = _.sum(selectedNumbers);
+      if (selectedSum === stars) {
+        usedNumbers = [...usedNumbers, ...selectedNumbers];
+        selectedNumbers = [];
+        stars = 1 + Math.floor(9 * Math.random());
+      }
+      this.selectionIsWrong = selectedSum > this.state.stars;
+      return {
+        selectedNumbers,
+        usedNumbers,
+        stars,
+      };
+    });
+  };
   render() {
     return (
       <div className="game">
@@ -82,6 +106,7 @@ class Game extends React.Component {
                   isUsed={isUsed}
                   isSelected={isSelected}
                   selectionIsWrong={this.selectionIsWrong}
+                  onClick={this.onNumberClick}
                 />
               );
             })}
