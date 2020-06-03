@@ -22,44 +22,30 @@ const randomSum = (arr, maxSum) => {
 };
 //为可能出现的每种情况设置参数
 const colors = {
+  available: "#eee",
   used: "lightgreen", //已使用过的数字,后面不能再选
   wrong: "lightcoral", //选择错误
   selected: "deepskyblue", //已选择的数字
 };
+
 //提取number component
 class Number extends React.PureComponent {
-  style() {
-    if (this.props.isUsed) {
-      return {
-        backgroundColor: colors.used, //green
-      };
-    }
-
-    if (this.props.isSelected) {
-      return {
-        backgroundColor: this.props.selectionIsWrong
-          ? colors.wrong //red
-          : colors.selected, //blue
-      };
-    }
-    return {};
-  }
-
   //点击事件
-  clickHandler = () => {
-    //数字没有没点击过才会触发
-    if (!this.props.isUsed) {
-      //执行传入的props
+  handleClick = () => {
+    if (this.props.status !== "used") {
       this.props.onClick(this.props.number);
     }
   };
+  componentWillUpdate(nextProps) {
+    console.log(this.props, nextProps);
+  }
 
   render() {
     return (
       <button
         className="number"
-        style={this.style()}
-        onClick={this.clickHandler}
+        style={{ backgroundColor: colors[this.props.status] }}
+        onClick={this.handleClick}
       >
         {/* 访问传入的props */}
         {this.props.number}
@@ -72,23 +58,21 @@ class Number extends React.PureComponent {
 class Game extends React.Component {
   //在render外面生成numbers数组
   numbers = _.range(1, 10);
-  //首次的随机的星星数量
-  stars = _.range(randomSum(this.numbers, 9));
 
-  //生成随机的星星数
-  state = {
-    //已挑选过的数字
+  initialState = () => ({
+    randomStars: randomSum(this.numbers, 9),
     selectedNumbers: [],
-    //已经使用过的数字
     usedNumbers: [],
-  };
+  });
 
-  //当已挑选的数字大于星星数量，返回wrong否则返回true
-  selectionIsWrong = _.sum(this.state.selectedNumbers) > this.stars.length;
+  state = this.initialState();
+
+  //首先设置为false
+  selectionIsWrong = false;
   //数字点击的函数，返回的是 selectedNumbers,usedNumbers,stars,三个state参数
-  onNumberClick = (number) => {
+  numberClick = (number) => {
     this.setState((prevState) => {
-      let { selectedNumbers, usedNumbers } = prevState;
+      let { selectedNumbers, usedNumbers, randomStars } = prevState;
       //解决能重复选择一个数字的bug
       if (selectedNumbers.indexOf(number) >= 0) {
         // 取消已经选择的数字
@@ -97,32 +81,39 @@ class Game extends React.Component {
         // 将该数字放入已选择的数字数组里面
         selectedNumbers = [...selectedNumbers, number];
       }
-      //计算已选择的数字之和
       const selectedSum = _.sum(selectedNumbers);
-      //若数组之和大于星星的数量， 返回true、否则返回false
-      this.selectionIsWrong = selectedSum > this.stars.length;
-      //若数租之和跟星星的数量相等
-      if (selectedSum === this.stars.length) {
-        // 将已选择的数字放入已使用的数组里面
+      if (selectedSum === randomStars) {
         usedNumbers = [...usedNumbers, ...selectedNumbers];
-        //将selectedNumbers置空
+        randomStars = randomSum(_.difference(this.numbers, usedNumbers), 9);
         selectedNumbers = [];
-        //utility函数
-        this.stars = _.range(
-          randomSum(_.difference(this.numbers, usedNumbers), 9)
-        );
       }
-      //判断游戏是否结束
+      this.selectionIsWrong = selectedSum > this.state.randomStars;
       this.gameIsDone = usedNumbers.length === this.numbers.length;
       return {
         selectedNumbers,
         usedNumbers,
+        randomStars,
       };
     });
   };
+  numberStatus(number) {
+    if (this.state.usedNumbers.indexOf(number) >= 0) {
+      return "used";
+    }
+    const isSelected = this.state.selectedNumbers.indexOf(number) >= 0;
+    if (isSelected) {
+      return this.selectionIsWrong ? "wrong" : "selected";
+    }
+    return "available";
+  }
+
+  resetGame = () => {
+    this.gameIsDone = false;
+    this.setState(this.initialState());
+  };
   //渲染星星
   renderStars() {
-    return this.stars.map((starIndex) => (
+    return _.range(this.state.randomStars).map((starIndex) => (
       <div className="star" key={starIndex} />
     ));
   }
@@ -135,15 +126,6 @@ class Game extends React.Component {
       </div>
     );
   }
-
-  resetGame = () => {
-    this.stars = _.range(randomSum(this.numbers, 9));
-    this.gameIsDone = false;
-    this.setState({
-      selectedNumbers: [],
-      usedNumbers: [],
-    });
-  };
 
   render() {
     return (
@@ -164,14 +146,13 @@ class Game extends React.Component {
               //selectedNumbers初始为空
               const isSelected =
                 this.state.selectedNumbers.indexOf(number) >= 0;
+              const isWrong = this.selectionIsWrong && isSelected;
               return (
                 <Number
                   key={number}
                   number={number}
-                  isUsed={isUsed}
-                  isSelected={isSelected}
-                  selectionIsWrong={this.selectionIsWrong}
-                  onClick={this.onNumberClick}
+                  status={this.numberStatus(number)}
+                  onClick={this.numberClick}
                 />
               );
             })}
