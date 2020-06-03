@@ -70,27 +70,26 @@ class Number extends React.PureComponent {
 
 //game component
 class Game extends React.Component {
-  //在render外面生成numbers数组和随机的星星数量
+  //在render外面生成numbers数组
   numbers = _.range(1, 10);
+  //首次的随机的星星数量
   stars = _.range(randomSum(this.numbers, 9));
 
   //生成随机的星星数
   state = {
     //已挑选过的数字
     selectedNumbers: [],
-
     //已经使用过的数字
     usedNumbers: [],
   };
 
   //当已挑选的数字大于星星数量，返回wrong否则返回true
   selectionIsWrong = _.sum(this.state.selectedNumbers) > this.stars.length;
-
   //数字点击的函数，返回的是 selectedNumbers,usedNumbers,stars,三个state参数
   onNumberClick = (number) => {
     this.setState((prevState) => {
       let { selectedNumbers, usedNumbers } = prevState;
-
+      //解决能重复选择一个数字的bug
       if (selectedNumbers.indexOf(number) >= 0) {
         // 取消已经选择的数字
         selectedNumbers = selectedNumbers.filter((sn) => sn !== number);
@@ -113,22 +112,47 @@ class Game extends React.Component {
           randomSum(_.difference(this.numbers, usedNumbers), 9)
         );
       }
-
+      //判断游戏是否结束
+      this.gameIsDone = usedNumbers.length === this.numbers.length;
       return {
         selectedNumbers,
         usedNumbers,
       };
     });
   };
+  //渲染星星
+  renderStars() {
+    return this.stars.map((starIndex) => (
+      <div className="star" key={starIndex} />
+    ));
+  }
+
+  renderPlayAgain() {
+    return (
+      <div className="game-done">
+        <div className="message">太棒了！</div>
+        <button onClick={this.resetGame}>再玩一次</button>
+      </div>
+    );
+  }
+
+  resetGame = () => {
+    this.stars = _.range(randomSum(this.numbers, 9));
+    this.gameIsDone = false;
+    this.setState({
+      selectedNumbers: [],
+      usedNumbers: [],
+    });
+  };
+
   render() {
     return (
       <div className="game">
         <div className="help">选择一个或多个数字。使其加起来等于星星的数量</div>
         <div className="body">
           <div className="stars">
-            {this.stars.map((starIndex) => (
-              <div key={starIndex} className="star" />
-            ))}
+            {/* 判断游戏是否结束，若结束则渲染再玩一次的界面，否则，渲染星星 */}
+            {this.gameIsDone ? this.renderPlayAgain() : this.renderStars()}
           </div>
 
           {/* 使用lodash的内置方法生成一个1-9的数组 */}
